@@ -1,0 +1,36 @@
+import requests
+import pandas as pd
+
+API_KEY="TU_API_KEY"
+CHANNEL_ID="TU_CHANNEL_ID"
+
+#Fechas a analizar
+START_DATE="2025-02-01T00:00:00Z"
+END_DATE="2025-02-28T23:59:59Z"
+
+def get_videos_published_in_month():
+    url=f"https://www.googleapis.com/youtube/v3/search?key={API_KEY}&channelId={CHANNEL_ID}&part=snippet,id&type=video&publishedAfter={START_DATE}&publishedBefore={END_DATE}&maxResults=50"
+    response= requests.get(url).json()
+    
+    videos=[]
+    for item in response.get("items",[]):
+        video_id= item["id"]["videoId"]
+        title=item["snippet"]["title"]
+        videos.append((video_id,title))
+        
+    return videos
+    
+videos= get_videos_published_in_month()
+print(videos) #Lista de videos publicados en Febrero
+
+def get_video_views(video_id):
+    url=f"https://www.googleapis.com/youtube/v3/videos?part=statistics&id={video_id}&key={API_KEY}"
+    response=requests.get(url).json()
+    return int(response["items"][0]["statistics"]["viewCount"])
+
+views_per_video= {title:get_video_views(video_id) for video_id,title in videos}
+
+#Para un mejor analisis convertirlo en un DF
+df=pd.DataFrame(views_per_video.items(),columns=["Videos","Views"])
+print(df)
+print(f"Total de views en el mes de febrero: {df['Views'].sum()}")
