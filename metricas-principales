@@ -34,3 +34,49 @@ views_per_video= {title:get_video_views(video_id) for video_id,title in videos}
 df=pd.DataFrame(views_per_video.items(),columns=["Videos","Views"])
 print(df)
 print(f"Total de views en el mes de febrero: {df['Views'].sum()}")
+
+
+# Función para obtener estadísticas de engagement por video
+def get_video_stats(video_id):
+    url = f"https://www.googleapis.com/youtube/v3/videos?part=statistics&id={video_id}&key={API_KEY}"
+    response = requests.get(url).json()
+    stats = response.get("items", [])[0].get("statistics", {})
+    
+    return {
+        "views": int(stats.get("viewCount", 0)),
+        "likes": int(stats.get("likeCount", 0)),
+        "comments": int(stats.get("commentCount", 0))
+    }
+
+# Obtener lista de videos
+videos = get_videos_published_in_month()
+
+# Obtener métricas por video
+video_data = []
+for video_id, title in videos:
+    stats = get_video_stats(video_id)
+    video_data.append({
+        "title": title,
+        "views": stats["views"],
+        "likes": stats["likes"],
+        "comments": stats["comments"],
+        "like_ratio": round(stats["likes"] / stats["views"], 4) if stats["views"] > 0 else 0,
+        "comment_ratio": round(stats["comments"] / stats["views"], 4) if stats["views"] > 0 else 0,
+    })
+
+# Convertir a DataFrame
+df = pd.DataFrame(video_data)
+print(df)
+
+# Engagement promedio del canal
+total_views = df["views"].sum()
+total_likes = df["likes"].sum()
+total_comments = df["comments"].sum()
+avg_like_ratio = total_likes / total_views if total_views > 0 else 0
+avg_comment_ratio = total_comments / total_views if total_views > 0 else 0
+
+print(f"Total Views: {total_views}")
+print(f"Total Likes: {total_likes}")
+print(f"Total Comments: {total_comments}")
+print(f"Average Like Ratio: {avg_like_ratio:.4f}")
+print(f"Average Comment Ratio: {avg_comment_ratio:.4f}")
